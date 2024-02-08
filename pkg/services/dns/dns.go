@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 
@@ -20,6 +21,9 @@ type dnsHandler struct {
 }
 
 func (h *dnsHandler) handle(w dns.ResponseWriter, r *dns.Msg, responseMessageSize int) {
+	j, _ := json.Marshal(r)
+	fmt.Fprintf(os.Stderr, "DNS Req: %s\n", string(j))
+
 	m := new(dns.Msg)
 	m.SetReply(r)
 	m.RecursionAvailable = true
@@ -29,6 +33,8 @@ func (h *dnsHandler) handle(w dns.ResponseWriter, r *dns.Msg, responseMessageSiz
 		responseMessageSize = int(edns0.UDPSize())
 	}
 	m.Truncate(responseMessageSize)
+	rj, _ := json.Marshal(m)
+	fmt.Fprintf(os.Stderr, "DNS Res: %s\n", string(rj))
 	if err := w.WriteMsg(m); err != nil {
 		log.Error(err)
 	}
@@ -161,7 +167,10 @@ func (h *dnsHandler) addAnswers(m *dns.Msg) {
 			}
 		case dns.TypeSRV:
 			_, records, err := resolver.LookupSRV(context.TODO(), "", "", q.Name)
+			j, _ := json.Marshal(records)
+			fmt.Fprintf(os.Stderr, "SRV DNS Records: %s\n", string(j))
 			if err != nil {
+				fmt.Fprintf(os.Stderr, "SRV DNS Error: %s\n", err)
 				m.Rcode = dns.RcodeNameError
 				return
 			}

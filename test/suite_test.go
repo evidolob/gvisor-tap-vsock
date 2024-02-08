@@ -79,15 +79,15 @@ outer:
 		_ = os.Remove(sock)
 		proxyStdoutChan := make(chan string, 100)
 		go func() {
-			for _ = range proxyStdoutChan {
-				//fmt.Fprintf(os.Stdout, "gvproxy: '%s'\n", line)
+			for line := range proxyStdoutChan {
+				fmt.Fprintf(os.Stdout, "gvproxy: '%s'\n", line)
 			}
 		}()
 
 		proxyStderrChan := make(chan string, 100)
 		go func() {
-			for _ = range proxyStderrChan {
-				//fmt.Fprintf(os.Stderr, "gvproxyErr: '%s'\n", line)
+			for line := range proxyStderrChan {
+				fmt.Fprintf(os.Stderr, "gvproxyErr: '%s'\n", line)
 			}
 		}()
 		// #nosec
@@ -95,7 +95,7 @@ outer:
 			fmt.Sprintf("--forward-sock=%s", forwardSock), fmt.Sprintf("--forward-dest=%s", podmanSock), fmt.Sprintf("--forward-user=%s", ignitionUser),
 			fmt.Sprintf("--forward-identity=%s", privateKeyFile),
 			fmt.Sprintf("--forward-sock=%s", forwardRootSock), fmt.Sprintf("--forward-dest=%s", podmanRootSock), fmt.Sprintf("--forward-user=%s", "root"),
-			fmt.Sprintf("--forward-identity=%s", privateKeyFile), "-debug")
+			fmt.Sprintf("--forward-identity=%s", privateKeyFile))
 
 		host.Stderr = NewOutputStream(proxyStderrChan)
 		host.Stdout = NewOutputStream(proxyStdoutChan)

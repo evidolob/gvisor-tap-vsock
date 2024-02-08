@@ -83,6 +83,13 @@ var _ = ginkgo.Describe("dns", func() {
 		gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 		gomega.Expect(string(out)).To(gomega.ContainSubstring(`_ldap._tcp.google.com	service = 5 0 389 ldap.google.com.`))
 	})
+
+	//ginkgo.It("should resolve SRV record for crc.dev", func() {
+	//	out, err := sshExec("nslookup -query=srv _submission._tcp.crc.dev")
+	//	gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+	//	gomega.Expect(string(out)).To(gomega.ContainSubstring(`_submission._tcp.crc.dev  service = 0 1 465 mail.gandi.net.`))
+	//})
+
 	ginkgo.It("should resolve TXT for wikipedia.org", func() {
 		out, err := sshExec("nslookup -query=txt wikipedia.org")
 		gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
