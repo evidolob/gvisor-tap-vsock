@@ -43,6 +43,7 @@ jobs:
     - name: Install
       run: |
         brew install qemu
+        brew install ldns
         touch continue
 
     - name: Set up Go
@@ -51,13 +52,10 @@ jobs:
         go-version: 1.20.x
 
     - name: Test DNS
-      run: nslookup -query=srv _ldap._tcp.google.com
+      run: drill SRV _ldap._tcp.google.com
 
     - name: Test
       run: make test
-
-    - name: Test DNS 2
-      run: nslookup -query=srv _ldap._tcp.google.com
 
     - uses: actions/upload-artifact@v3
       if: always()
