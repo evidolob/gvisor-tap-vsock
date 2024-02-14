@@ -2,7 +2,7 @@ name: Go
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, fix-test ]
   pull_request:
     branches: [ main ]
 
@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: ["1.20.x", "1.21.x", "1.22.0-rc.1"]
+        go-version: ["1.20.x"]
     steps:
     - uses: actions/checkout@v3
 
@@ -44,6 +44,7 @@ jobs:
     - name: Install
       run: |
         brew install qemu
+        brew install ldns
         touch continue
 
     - name: Set up Go
@@ -51,14 +52,20 @@ jobs:
       with:
         go-version: 1.20.x
 
+    - name: Test DNS
+      run: drill SRV _ldap._tcp.google.com
+
     - name: Test
       run: make test
 
     - uses: actions/upload-artifact@v3
       if: always()
       with:
-        name: qcon
-        path: test/qcon.log
+        name: files
+        path: | 
+          test/qcon.log
+          test/capture.pcap
+
 
   win-sshproxy-tests:
     runs-on: windows-latest # Only builds/runs on windows

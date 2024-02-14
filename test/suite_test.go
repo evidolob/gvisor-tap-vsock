@@ -77,7 +77,19 @@ var _ = ginkgo.BeforeSuite(func() {
 outer:
 	for panics := 0; ; panics++ {
 		_ = os.Remove(sock)
+		proxyStdoutChan := make(chan string, 100)
+		go func() {
+			for line := range proxyStdoutChan {
+				fmt.Fprintf(os.Stdout, "gvproxy: '%s'\n", line)
+			}
+		}()
 
+		proxyStderrChan := make(chan string, 100)
+		go func() {
+			for line := range proxyStderrChan {
+				fmt.Fprintf(os.Stderr, "gvproxyErr: '%s'\n", line)
+			}
+		}()
 		// #nosec
 		host = exec.Command(filepath.Join(binDir, "gvproxy"), fmt.Sprintf("--listen=unix://%s", sock), fmt.Sprintf("--listen-qemu=tcp://127.0.0.1:%d", qemuPort),
 			fmt.Sprintf("--forward-sock=%s", forwardSock), fmt.Sprintf("--forward-dest=%s", podmanSock), fmt.Sprintf("--forward-user=%s", ignitionUser),
@@ -85,8 +97,9 @@ outer:
 			fmt.Sprintf("--forward-sock=%s", forwardRootSock), fmt.Sprintf("--forward-dest=%s", podmanRootSock), fmt.Sprintf("--forward-user=%s", "root"),
 			fmt.Sprintf("--forward-identity=%s", privateKeyFile))
 
-		host.Stderr = os.Stderr
-		host.Stdout = os.Stdout
+		host.Stderr = NewOutputStream(proxyStderrChan)
+		host.Stdout = NewOutputStream(proxyStdoutChan)
+
 		gomega.Expect(host.Start()).Should(gomega.Succeed())
 		go func() {
 			if err := host.Wait(); err != nil {
@@ -104,11 +117,25 @@ outer:
 			break
 		}
 
+		qemuStdoutChan := make(chan string, 100)
+		go func() {
+			for line := range qemuStdoutChan {
+				fmt.Fprintf(os.Stdout, "qemu: '%s'\n", line)
+			}
+		}()
+
+		qemuStderrChan := make(chan string, 100)
+		go func() {
+			for line := range qemuStderrChan {
+				fmt.Fprintf(os.Stdout, "qemuErr: '%s'\n", line)
+			}
+		}()
+
 		template := `%s -m 2048 -nographic -serial file:%s -snapshot -drive if=virtio,file=%s -fw_cfg name=opt/com.coreos/config,file=%s -netdev socket,id=vlan,connect=127.0.0.1:%d -device virtio-net-pci,netdev=vlan,mac=5a:94:ef:e4:0c:ee`
 		// #nosec
 		client = exec.Command(qemuExecutable(), strings.Split(fmt.Sprintf(template, qemuArgs(), qconLog, qemuImage, ignFile, qemuPort), " ")...)
-		client.Stderr = os.Stderr
-		client.Stdout = os.Stdout
+		client.Stderr = NewOutputStream(qemuStderrChan)
+		client.Stdout = NewOutputStream(qemuStdoutChan)
 		gomega.Expect(client.Start()).Should(gomega.Succeed())
 		go func() {
 			if err := client.Wait(); err != nil {
@@ -187,6 +214,7 @@ func scp(src, dst string) error {
 	sshCmd := exec.Command("scp",
 		"-o", "UserKnownHostsFile=/dev/null",
 		"-o", "StrictHostKeyChecking=no",
+		"-o", "IdentitiesOnly=yes",
 		"-i", privateKeyFile,
 		"-P", strconv.Itoa(sshPort),
 		src,
@@ -204,6 +232,7 @@ func sshCommand(cmd ...string) *exec.Cmd {
 	sshCmd := exec.Command("ssh",
 		"-o", "UserKnownHostsFile=/dev/null",
 		"-o", "StrictHostKeyChecking=no",
+		"-o", "IdentitiesOnly=yes",
 		"-i", privateKeyFile,
 		"-p", strconv.Itoa(sshPort),
 		fmt.Sprintf("%s@127.0.0.1", ignitionUser), "--", strings.Join(cmd, " ")) // #nosec G204

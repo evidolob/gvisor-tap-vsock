@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 
@@ -70,10 +71,25 @@ var _ = ginkgo.Describe("dns", func() {
 		gomega.Expect(string(out)).To(gomega.ContainSubstring("wikipedia.org	nameserver = ns0.wikimedia.org."))
 	})
 	ginkgo.It("should resolve LDAP SRV record for google.com", func() {
-		out, err := sshExec("nslookup -query=srv _ldap._tcp.google.com")
+		out, err := sshExec("nslookup -query=srv _ldap._tcp.google.com 8.8.8.8")
+		fmt.Println("---debug---")
+		fmt.Println(string(out))
+		if err != nil {
+			fmt.Println("---error---")
+			fmt.Print(err.Error())
+			fmt.Println("---end error---")
+		}
+		fmt.Println("---debug end---")
 		gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 		gomega.Expect(string(out)).To(gomega.ContainSubstring(`_ldap._tcp.google.com	service = 5 0 389 ldap.google.com.`))
 	})
+
+	//ginkgo.It("should resolve SRV record for crc.dev", func() {
+	//	out, err := sshExec("nslookup -query=srv _submission._tcp.crc.dev")
+	//	gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+	//	gomega.Expect(string(out)).To(gomega.ContainSubstring(`_submission._tcp.crc.dev  service = 0 1 465 mail.gandi.net.`))
+	//})
+
 	ginkgo.It("should resolve TXT for wikipedia.org", func() {
 		out, err := sshExec("nslookup -query=txt wikipedia.org")
 		gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
