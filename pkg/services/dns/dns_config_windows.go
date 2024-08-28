@@ -9,7 +9,7 @@ import (
 	qdmDns "github.com/qdm12/dns/v2/pkg/nameserver"
 )
 
-func GetDNSHostAndPort() (string, string, error) {
+func getDNSHostAndPort() (string, string, error) {
 	nameservers := qdmDns.GetDNSServers()
 
 	var nameserver netip.AddrPort

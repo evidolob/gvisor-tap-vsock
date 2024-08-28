@@ -22,31 +22,17 @@ type dnsHandler struct {
 
 func newDNSHandler(zones []types.Zone) (*dnsHandler, error) {
 
-	dnsClient, nameserver, err := readAndCreateClient()
+	nameserver, port, err := getDNSHostAndPort()
 	if err != nil {
 		return nil, err
 	}
 
 	return &dnsHandler{
 		zones:      zones,
-		dnsClient:  dnsClient,
-		nameserver: nameserver,
+		dnsClient:  new(dns.Client),
+		nameserver: net.JoinHostPort(nameserver, port),
 	}, nil
 
-}
-
-func readAndCreateClient() (*dns.Client, string, error) {
-
-	nameserver, port, err := GetDNSHostAndPort()
-	if err != nil {
-		return nil, "", err
-	}
-
-	nameserver = net.JoinHostPort(nameserver, port)
-
-	client := new(dns.Client)
-
-	return client, nameserver, nil
 }
 
 func (h *dnsHandler) handle(w dns.ResponseWriter, r *dns.Msg, responseMessageSize int) {

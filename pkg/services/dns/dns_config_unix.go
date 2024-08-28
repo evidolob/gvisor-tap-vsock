@@ -6,7 +6,7 @@ import (
 	"github.com/miekg/dns"
 )
 
-func GetDNSHostAndPort() (string, string, error) {
+func getDNSHostAndPort() (string, string, error) {
 	conf, err := dns.ClientConfigFromFile("/etc/resolv.conf")
 	if err != nil {
 		return "", "", err
